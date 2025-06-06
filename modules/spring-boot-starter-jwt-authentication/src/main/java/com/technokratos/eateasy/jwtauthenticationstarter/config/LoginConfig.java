@@ -24,45 +24,45 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
 public class LoginConfig {
 
-    private final AuthenticationManager authenticationManager;
-    private final AccessTokenGeneratorService accessTokenGeneratorService;
-    private final RefreshTokenService refreshTokenGeneratorService;
-    private final ObjectMapper objectMapper;
-    private final JwtProperties jwtProperties;
-    private final RequestMapper requestMapper;
-    private final RefreshTokenCookieWriter cookieWriter;
+  private final AuthenticationManager authenticationManager;
+  private final AccessTokenGeneratorService accessTokenGeneratorService;
+  private final RefreshTokenService refreshTokenGeneratorService;
+  private final ObjectMapper objectMapper;
+  private final JwtProperties jwtProperties;
+  private final RequestMapper requestMapper;
+  private final RefreshTokenCookieWriter cookieWriter;
 
-    @Bean
-    public TokenResponseUsernamePasswordAuthenticationFilter loginFilter(
-            @Qualifier("loginSuccessHandler") AuthenticationSuccessHandler loginSuccessHandler,
-            @Qualifier("loginFailureHandler") AuthenticationFailureHandler loginFailureHandler) {
+  @Bean
+  public TokenResponseUsernamePasswordAuthenticationFilter loginFilter(
+      @Qualifier("loginSuccessHandler") AuthenticationSuccessHandler loginSuccessHandler,
+      @Qualifier("loginFailureHandler") AuthenticationFailureHandler loginFailureHandler) {
 
-        return TokenResponseUsernamePasswordAuthenticationFilter.builder()
-                .authenticationManager(authenticationManager)
-                .authenticationSuccessHandler(loginSuccessHandler)
-                .authenticationFailureHandler(loginFailureHandler)
-                .loginUrl(jwtProperties.getLoginUrl())
-                .requestMapper(requestMapper)
-                .build();
-    }
+    return TokenResponseUsernamePasswordAuthenticationFilter.builder()
+        .authenticationManager(authenticationManager)
+        .authenticationSuccessHandler(loginSuccessHandler)
+        .authenticationFailureHandler(loginFailureHandler)
+        .loginUrl(jwtProperties.getLoginUrl())
+        .requestMapper(requestMapper)
+        .build();
+  }
 
-    @Bean(name = "loginSuccessHandler")
-    @ConditionalOnMissingBean(name = "loginSuccessHandler")
-    public AuthenticationSuccessHandler loginSuccessHandler() {
+  @Bean(name = "loginSuccessHandler")
+  @ConditionalOnMissingBean(name = "loginSuccessHandler")
+  public AuthenticationSuccessHandler loginSuccessHandler() {
 
-        return TokenResponseAuthenticationSuccessHandler.builder()
-                .accessTokenGeneratorService(accessTokenGeneratorService)
-                .refreshTokenGeneratorService(refreshTokenGeneratorService)
-                .objectMapper(objectMapper)
-                .requestMapper(requestMapper)
-                .cookieWriter(cookieWriter)
-                .useCookie(jwtProperties.getTokens().getRefresh().isUseCookie())
-                .build();
-    }
+    return TokenResponseAuthenticationSuccessHandler.builder()
+        .accessTokenGeneratorService(accessTokenGeneratorService)
+        .refreshTokenGeneratorService(refreshTokenGeneratorService)
+        .objectMapper(objectMapper)
+        .requestMapper(requestMapper)
+        .cookieWriter(cookieWriter)
+        .useCookie(jwtProperties.getTokens().getRefresh().isUseCookie())
+        .build();
+  }
 
-    @Bean(name = "loginFailureHandler")
-    @ConditionalOnMissingBean(name = "loginFailureHandler")
-    public AuthenticationFailureHandler logoutFailureHandler() {
-        return new ErrorResponseUsernamePasswordAuthenticationFailureHandler(objectMapper);
-    }
+  @Bean(name = "loginFailureHandler")
+  @ConditionalOnMissingBean(name = "loginFailureHandler")
+  public AuthenticationFailureHandler logoutFailureHandler() {
+    return new ErrorResponseUsernamePasswordAuthenticationFailureHandler(objectMapper);
+  }
 }

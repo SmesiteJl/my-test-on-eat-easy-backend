@@ -6,6 +6,15 @@ spring:
     password: postgres
     hikari:
       maximum-pool-size: 2
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+
+  cloud:
+    consul:
+      enabled: false
+      discovery:
+        enabled: false
+      registry:
+        enabled: false

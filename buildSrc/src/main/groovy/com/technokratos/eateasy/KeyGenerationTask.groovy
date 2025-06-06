@@ -9,21 +9,23 @@ class KeyGenerationTask implements Plugin<Project> {
     void apply(Project project) {
         project.tasks.register('generateRsaKeys') {
             description = 'Generates RSA key pairs for access and refresh tokens'
-            def resourcesDir = project.layout.buildDirectory.dir('resources/test/security')
+
+            def keyDir = new File("${project.projectDir}/src/test/resources/security")
             def keySize = 2048
-            def keyDir = resourcesDir.get().asFile
+
             doLast {
                 keyDir.mkdirs()
 
-                logger.lifecycle("Генерация ключей для ACCESS токена...")
+                logger.lifecycle("Generating ACCESS token keys...")
                 generateKeyPair('access', project, keyDir, keySize)
-                logger.lifecycle("Генерация ключей для REFRESH токена...")
+                logger.lifecycle("Generating REFRESH token keys...")
                 generateKeyPair('refresh', project, keyDir, keySize)
 
-                logger.lifecycle("Все ключи успешно созданы в ${keyDir}")
+                logger.lifecycle("All keys have been successfully created in ${keyDir}")
             }
         }
 
+        // Генерим перед тестами
         project.tasks.named('processTestResources') {
             dependsOn project.tasks.named('generateRsaKeys')
         }

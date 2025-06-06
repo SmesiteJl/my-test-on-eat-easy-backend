@@ -21,46 +21,47 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 public class DefaultBeansConfig {
 
-    @Configuration
-    @RequiredArgsConstructor
-    @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
-    public class ServerOnlyDefalultBeansConfig {
+  @Configuration
+  @RequiredArgsConstructor
+  @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
+  public class ServerOnlyDefalultBeansConfig {
 
-        private final ObjectMapper objectMapper;
-        private final JwtProperties jwtProperties;
+    private final ObjectMapper objectMapper;
+    private final JwtProperties jwtProperties;
 
-        @Bean
-        @ConditionalOnMissingBean
-        public RefreshTokenRepository refreshTokenRepository() {
-            return new InMemoryRefreshTokenRepository();
-        }
-
-        @Bean
-        @ConditionalOnMissingBean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
-
-        @Bean
-        @ConditionalOnMissingBean
-        public RequestMapper requestMapper() {
-            return new JacksonObjectMapperRequestMapper(objectMapper);
-        }
-
-        @Bean
-        @ConditionalOnMissingBean
-        public RefreshTokenCookieReader refreshTokenCookieReader() {
-            return new SimpleRefreshTokenCookieReader(jwtProperties.getTokens().getRefresh().getCookieName());
-        }
-
-        @Bean
-        @ConditionalOnMissingBean
-        public RefreshTokenCookieWriter refreshTokenCookieWriter() {
-            return SimpleRefreshTokenCookieWriter.builder()
-                    .cookieName(jwtProperties.getTokens().getRefresh().getCookieName())
-                    .expiration(jwtProperties.getTokens().getRefresh().getExpiration())
-                    .refreshUrl(jwtProperties.getRefreshUrl())
-                    .build();
-        }
+    @Bean
+    @ConditionalOnMissingBean
+    public RefreshTokenRepository refreshTokenRepository() {
+      return new InMemoryRefreshTokenRepository();
     }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public PasswordEncoder passwordEncoder() {
+      return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RequestMapper requestMapper() {
+      return new JacksonObjectMapperRequestMapper(objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RefreshTokenCookieReader refreshTokenCookieReader() {
+      return new SimpleRefreshTokenCookieReader(
+          jwtProperties.getTokens().getRefresh().getCookieName());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RefreshTokenCookieWriter refreshTokenCookieWriter() {
+      return SimpleRefreshTokenCookieWriter.builder()
+          .cookieName(jwtProperties.getTokens().getRefresh().getCookieName())
+          .expiration(jwtProperties.getTokens().getRefresh().getExpiration())
+          .refreshUrl(jwtProperties.getRefreshUrl())
+          .build();
+    }
+  }
 }

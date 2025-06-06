@@ -18,27 +18,27 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 @ConditionalOnExpression("'${jwt.mode:off}'.equals('off') == false")
 public class AccessConfig {
 
-    private final JwtProperties jwtProperties;
-    private final ObjectMapper objectMapper;
-    private final AuthenticationManager authenticationManager;
+  private final JwtProperties jwtProperties;
+  private final ObjectMapper objectMapper;
+  private final AuthenticationManager authenticationManager;
 
-    @Bean
-    public AccessTokenAuthenticationProcessingFilter accessTokenAuthenticationFilter(
-            @Qualifier("accessFailureHandler")
-            AuthenticationFailureHandler authenticationFailureHandler) {
+  @Bean
+  public AccessTokenAuthenticationProcessingFilter accessTokenAuthenticationFilter(
+      @Qualifier("accessFailureHandler")
+          AuthenticationFailureHandler authenticationFailureHandler) {
 
-        return AccessTokenAuthenticationProcessingFilter.builder()
-                .header(jwtProperties.getTokens().getAccess().getHeader())
-                .prefix(jwtProperties.getTokens().getAccess().getPrefix())
-                .authenticationManager(authenticationManager)
-                .authenticationFailureHandler(authenticationFailureHandler)
-                .build();
-    }
+    return AccessTokenAuthenticationProcessingFilter.builder()
+        .header(jwtProperties.getTokens().getAccess().getHeader())
+        .prefix(jwtProperties.getTokens().getAccess().getPrefix())
+        .authenticationManager(authenticationManager)
+        .authenticationFailureHandler(authenticationFailureHandler)
+        .build();
+  }
 
-    @Bean(name = "accessFailureHandler")
-    @ConditionalOnMissingBean(name = "accessFailureHandler")
-    public AuthenticationFailureHandler accessFailureHandler() {
+  @Bean(name = "accessFailureHandler")
+  @ConditionalOnMissingBean(name = "accessFailureHandler")
+  public AuthenticationFailureHandler accessFailureHandler() {
 
-        return new ErrorResponseTokenAuthenticationFailureHandler(objectMapper, "access");
-    }
+    return new ErrorResponseTokenAuthenticationFailureHandler(objectMapper, "access");
+  }
 }

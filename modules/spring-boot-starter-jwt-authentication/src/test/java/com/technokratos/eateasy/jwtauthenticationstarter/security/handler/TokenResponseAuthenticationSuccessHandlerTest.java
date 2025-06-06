@@ -1,5 +1,9 @@
 package com.technokratos.eateasy.jwtauthenticationstarter.security.handler;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.technokratos.eateasy.jwtauthenticationstarter.dto.request.FingerprintRequest;
 import com.technokratos.eateasy.jwtauthenticationstarter.dto.response.TokenResponse;
@@ -9,6 +13,8 @@ import com.technokratos.eateasy.jwtauthenticationstarter.utils.refreshtokencooki
 import com.technokratos.eateasy.jwtauthenticationstarter.utils.requestmapper.RequestMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,125 +26,130 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.io.PrintWriter;
-import java.util.Collections;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class TokenResponseAuthenticationSuccessHandlerTest {
 
-    private static final String USERNAME = "testUser";
-    private static final String FINGERPRINT = "client-fp";
-    private static final String ACCESS_TOKEN = "access.jwt";
-    private static final String REFRESH_TOKEN = "refresh.jwt";
-    private static final String JSON_RESPONSE = "json-response";
+  private static final String USERNAME = "testUser";
+  private static final String FINGERPRINT = "client-fp";
+  private static final String ACCESS_TOKEN = "access.jwt";
+  private static final String REFRESH_TOKEN = "refresh.jwt";
+  private static final String JSON_RESPONSE = "json-response";
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private AccessTokenGeneratorService accessGenerator;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RefreshTokenGeneratorService refreshGenerator;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private ObjectMapper objectMapper;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RequestMapper requestMapper;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RefreshTokenCookieWriter cookieWriter;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private HttpServletRequest request;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private HttpServletRequest noFingerprintRequest;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private HttpServletResponse response;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private PrintWriter writer;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private Authentication authentication;
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private AccessTokenGeneratorService accessGenerator;
 
-    private TokenResponseAuthenticationSuccessHandler useCookieHandler;
-    private TokenResponseAuthenticationSuccessHandler noCookieHandler;
-    private UserDetails userDetails;
-    private final ArgumentCaptor<TokenResponse> responseCaptor = ArgumentCaptor.forClass(TokenResponse.class);
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RefreshTokenGeneratorService refreshGenerator;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        userDetails = User.withUsername(USERNAME)
-                .password("pass")
-                .authorities("ROLE_USER")
-                .build();
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private ObjectMapper objectMapper;
 
-        useCookieHandler = TokenResponseAuthenticationSuccessHandler.builder()
-                .accessTokenGeneratorService(accessGenerator)
-                .refreshTokenGeneratorService(refreshGenerator)
-                .objectMapper(objectMapper)
-                .requestMapper(requestMapper)
-                .cookieWriter(cookieWriter)
-                .useCookie(true)
-                .build();
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RequestMapper requestMapper;
 
-        noCookieHandler = TokenResponseAuthenticationSuccessHandler.builder()
-                .accessTokenGeneratorService(accessGenerator)
-                .refreshTokenGeneratorService(refreshGenerator)
-                .objectMapper(objectMapper)
-                .requestMapper(requestMapper)
-                .cookieWriter(cookieWriter)
-                .useCookie(false)
-                .build();
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RefreshTokenCookieWriter cookieWriter;
 
-        when(authentication.getPrincipal()).thenReturn(userDetails);
-        when(requestMapper.getObjectFromRequest(noFingerprintRequest, FingerprintRequest.class)).thenReturn(null);
-        when(requestMapper.getObjectFromRequest(request, FingerprintRequest.class)).thenReturn(new FingerprintRequest(FINGERPRINT));
-        when(accessGenerator.generate(same(userDetails), any())).thenReturn(ACCESS_TOKEN);
-        when(refreshGenerator.generate(same(userDetails), any())).thenReturn(REFRESH_TOKEN);
-        when(response.getWriter()).thenReturn(writer);
-        when(objectMapper.writeValueAsString(any())).thenReturn(JSON_RESPONSE);
-    }
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private HttpServletRequest request;
 
-    @Test
-    void onAuthenticationSuccessWhenPrincipalIsNotUserDetailsShouldThrowInternalAuthenticationServiceException() {
-        when(authentication.getPrincipal()).thenReturn(new Object());
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private HttpServletRequest noFingerprintRequest;
 
-        assertThrows(InternalAuthenticationServiceException.class,
-                () -> useCookieHandler.onAuthenticationSuccess(request, response, authentication));
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private HttpServletResponse response;
 
-        verifyNoInteractions(accessGenerator, refreshGenerator, objectMapper, requestMapper, cookieWriter, response);
-    }
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private PrintWriter writer;
 
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private Authentication authentication;
 
-    @Test
-    void onAuthenticationSuccessWithUserDetailsShouldGenerateTokensAndWritesResponse() throws Exception {
+  private TokenResponseAuthenticationSuccessHandler useCookieHandler;
+  private TokenResponseAuthenticationSuccessHandler noCookieHandler;
+  private UserDetails userDetails;
+  private final ArgumentCaptor<TokenResponse> responseCaptor =
+      ArgumentCaptor.forClass(TokenResponse.class);
 
-        noCookieHandler.onAuthenticationSuccess(request, response, authentication);
+  @BeforeEach
+  void setUp() throws Exception {
+    userDetails = User.withUsername(USERNAME).password("pass").authorities("ROLE_USER").build();
 
-        verify(accessGenerator).generate(same(userDetails), eq(Collections.emptyMap()));
-        verify(refreshGenerator).generate(same(userDetails), same(FINGERPRINT));
-        verify(response).setContentType(eq("application/json"));
-        verify(response).setCharacterEncoding(eq("UTF-8"));
-        verify(response).setStatus(HttpServletResponse.SC_OK);
-        verify(objectMapper).writeValueAsString(responseCaptor.capture());
-        verifyNoInteractions(cookieWriter);
+    useCookieHandler =
+        TokenResponseAuthenticationSuccessHandler.builder()
+            .accessTokenGeneratorService(accessGenerator)
+            .refreshTokenGeneratorService(refreshGenerator)
+            .objectMapper(objectMapper)
+            .requestMapper(requestMapper)
+            .cookieWriter(cookieWriter)
+            .useCookie(true)
+            .build();
 
-        TokenResponse tokenResponse = responseCaptor.getValue();
-        assertAll(
-                () -> assertEquals(ACCESS_TOKEN, tokenResponse.access()),
-                () -> assertEquals(REFRESH_TOKEN, tokenResponse.refresh())
-        );
-    }
+    noCookieHandler =
+        TokenResponseAuthenticationSuccessHandler.builder()
+            .accessTokenGeneratorService(accessGenerator)
+            .refreshTokenGeneratorService(refreshGenerator)
+            .objectMapper(objectMapper)
+            .requestMapper(requestMapper)
+            .cookieWriter(cookieWriter)
+            .useCookie(false)
+            .build();
 
-    @Test
-    void onAuthenticationSuccessWithCookieShouldWriteCookie() throws Exception {
-        useCookieHandler.onAuthenticationSuccess(request, response, authentication);
+    when(authentication.getPrincipal()).thenReturn(userDetails);
+    when(requestMapper.getObjectFromRequest(noFingerprintRequest, FingerprintRequest.class))
+        .thenReturn(null);
+    when(requestMapper.getObjectFromRequest(request, FingerprintRequest.class))
+        .thenReturn(new FingerprintRequest(FINGERPRINT));
+    when(accessGenerator.generate(same(userDetails), any())).thenReturn(ACCESS_TOKEN);
+    when(refreshGenerator.generate(same(userDetails), any())).thenReturn(REFRESH_TOKEN);
+    when(response.getWriter()).thenReturn(writer);
+    when(objectMapper.writeValueAsString(any())).thenReturn(JSON_RESPONSE);
+  }
 
-        verify(cookieWriter).write(REFRESH_TOKEN, response);
-    }
+  @Test
+  void
+      onAuthenticationSuccessWhenPrincipalIsNotUserDetailsShouldThrowInternalAuthenticationServiceException() {
+    when(authentication.getPrincipal()).thenReturn(new Object());
 
-    @Test
-    void onAuthenticationSuccessWithMissingFingerprintShouldUserEmptyString() throws Exception {
-        noCookieHandler.onAuthenticationSuccess(noFingerprintRequest, response, authentication);
+    assertThrows(
+        InternalAuthenticationServiceException.class,
+        () -> useCookieHandler.onAuthenticationSuccess(request, response, authentication));
 
-        verify(refreshGenerator).generate(userDetails, "");
-    }
+    verifyNoInteractions(
+        accessGenerator, refreshGenerator, objectMapper, requestMapper, cookieWriter, response);
+  }
 
+  @Test
+  void onAuthenticationSuccessWithUserDetailsShouldGenerateTokensAndWritesResponse()
+      throws Exception {
+
+    noCookieHandler.onAuthenticationSuccess(request, response, authentication);
+
+    verify(accessGenerator).generate(same(userDetails), eq(Collections.emptyMap()));
+    verify(refreshGenerator).generate(same(userDetails), same(FINGERPRINT));
+    verify(response).setContentType(eq("application/json"));
+    verify(response).setCharacterEncoding(eq("UTF-8"));
+    verify(response).setStatus(HttpServletResponse.SC_OK);
+    verify(objectMapper).writeValueAsString(responseCaptor.capture());
+    verifyNoInteractions(cookieWriter);
+
+    TokenResponse tokenResponse = responseCaptor.getValue();
+    assertAll(
+        () -> assertEquals(ACCESS_TOKEN, tokenResponse.access()),
+        () -> assertEquals(REFRESH_TOKEN, tokenResponse.refresh()));
+  }
+
+  @Test
+  void onAuthenticationSuccessWithCookieShouldWriteCookie() throws Exception {
+    useCookieHandler.onAuthenticationSuccess(request, response, authentication);
+
+    verify(cookieWriter).write(REFRESH_TOKEN, response);
+  }
+
+  @Test
+  void onAuthenticationSuccessWithMissingFingerprintShouldUserEmptyString() throws Exception {
+    noCookieHandler.onAuthenticationSuccess(noFingerprintRequest, response, authentication);
+
+    verify(refreshGenerator).generate(userDetails, "");
+  }
 }

@@ -2,9 +2,8 @@ package com.technokratos.eateasy.userimpl.model;
 
 import com.technokratos.eateasy.userapi.roleenum.UserRole;
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
@@ -15,24 +14,24 @@ import java.util.UUID;
 @Builder
 public class UserEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private UUID id;
 
-    private String username;
+  private String username;
 
-    private String password;
+  private String password;
 
-    private String email;
+  private String email;
 
-    @Column(name = "first_name")
-    private String firstName;
+  @Column(name = "first_name")
+  private String firstName;
 
-    @Column(name = "last_name")
-    private String lastName;
+  @Column(name = "last_name")
+  private String lastName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(length = 20, nullable = false)
-    @Builder.Default
-    private UserRole role = UserRole.USER;
+  @Enumerated(EnumType.STRING)
+  @Column(length = 20, nullable = false)
+  @Builder.Default
+  private UserRole role = UserRole.USER;
 }

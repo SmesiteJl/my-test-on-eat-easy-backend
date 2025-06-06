@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public interface RefreshTokenRedisKeyUtil {
 
-    UUID generateId();
-    String getKey(UUID id);
+  UUID generateId();
+
+  String getKey(UUID id);
 }

@@ -21,30 +21,28 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
 public class LogoutConfig {
 
-    private final JwtProperties jwtProperties;
-    private final RequestMapper requestMapper;
-    private final RefreshTokenCookieWriter cookieWriter;
-    private final RefreshTokenCookieReader cookieReader;
+  private final JwtProperties jwtProperties;
+  private final RequestMapper requestMapper;
+  private final RefreshTokenCookieWriter cookieWriter;
+  private final RefreshTokenCookieReader cookieReader;
 
-    @Bean
-    @ConditionalOnMissingBean
-    public RefreshTokenInvalidationLogoutHandler logoutHandler(
-            @Qualifier("refreshTokenService")
-            RefreshTokenService refreshTokenService) {
+  @Bean
+  @ConditionalOnMissingBean
+  public RefreshTokenInvalidationLogoutHandler logoutHandler(
+      @Qualifier("refreshTokenService") RefreshTokenService refreshTokenService) {
 
-        return RefreshTokenInvalidationLogoutHandler.builder()
-                .useCookie(jwtProperties.getTokens().getRefresh().isUseCookie())
-                .requestMapper(requestMapper)
-                .refreshTokenCookieReader(cookieReader)
-                .refreshTokenCookieWriter(cookieWriter)
-                .refreshTokenService(refreshTokenService)
-                .build();
-    }
+    return RefreshTokenInvalidationLogoutHandler.builder()
+        .useCookie(jwtProperties.getTokens().getRefresh().isUseCookie())
+        .requestMapper(requestMapper)
+        .refreshTokenCookieReader(cookieReader)
+        .refreshTokenCookieWriter(cookieWriter)
+        .refreshTokenService(refreshTokenService)
+        .build();
+  }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public LogoutSuccessHandler logoutSuccessHandler() {
-        return new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK);
-    }
-
+  @Bean
+  @ConditionalOnMissingBean
+  public LogoutSuccessHandler logoutSuccessHandler() {
+    return new HttpStatusReturningLogoutSuccessHandler(HttpStatus.OK);
+  }
 }

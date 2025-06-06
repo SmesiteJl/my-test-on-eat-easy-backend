@@ -1,8 +1,13 @@
 package com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.service.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.repository.RefreshTokenRepository;
 import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.service.RefreshTokenGeneratorService;
 import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.service.RefreshTokenParserService;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,84 +16,85 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class CompositeRefreshTokenServiceTest {
 
-    private static final String TOKEN = "refresh.token";
-    private static final String INVALID_TOKEN = "invalid.refresh.token";
-    private static final String FINGERPRINT = "client-fp";
-    private static final String USERNAME = "username";
-    private static final UUID TOKEN_ID = UUID.randomUUID();
+  private static final String TOKEN = "refresh.token";
+  private static final String INVALID_TOKEN = "invalid.refresh.token";
+  private static final String FINGERPRINT = "client-fp";
+  private static final String USERNAME = "username";
+  private static final UUID TOKEN_ID = UUID.randomUUID();
 
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RefreshTokenGeneratorService generator;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RefreshTokenParserService parser;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private RefreshTokenRepository repository;
-    @Mock(strictness = Mock.Strictness.LENIENT)
-    private UserDetails userDetails;
-    private CompositeRefreshTokenService service;
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RefreshTokenGeneratorService generator;
 
-    @BeforeEach
-    void setUp() {
-        service = CompositeRefreshTokenService.builder()
-                .generator(generator)
-                .parser(parser)
-                .repository(repository)
-                .build();
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RefreshTokenParserService parser;
 
-        when(generator.generate(userDetails, FINGERPRINT)).thenReturn(TOKEN);
-        when(parser.extractUsername(TOKEN)).thenReturn(USERNAME);
-        when(parser.extractId(TOKEN)).thenReturn(TOKEN_ID);
-        doThrow(new CredentialsExpiredException("Token expired")).when(parser).validate(eq(INVALID_TOKEN), any());
-    }
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private RefreshTokenRepository repository;
 
-    @Test
-    void generateShouldDelegateToGenerator() {
-        assertEquals(TOKEN, service.generate(userDetails, FINGERPRINT));
+  @Mock(strictness = Mock.Strictness.LENIENT)
+  private UserDetails userDetails;
 
-        verify(generator).generate(userDetails, FINGERPRINT);
-    }
+  private CompositeRefreshTokenService service;
 
-    @Test
-    void extractUsernameShouldDelegateToParser() {
-        assertEquals(USERNAME, service.extractUsername(TOKEN));
+  @BeforeEach
+  void setUp() {
+    service =
+        CompositeRefreshTokenService.builder()
+            .generator(generator)
+            .parser(parser)
+            .repository(repository)
+            .build();
 
-        verify(parser).extractUsername(TOKEN);
-    }
+    when(generator.generate(userDetails, FINGERPRINT)).thenReturn(TOKEN);
+    when(parser.extractUsername(TOKEN)).thenReturn(USERNAME);
+    when(parser.extractId(TOKEN)).thenReturn(TOKEN_ID);
+    doThrow(new CredentialsExpiredException("Token expired"))
+        .when(parser)
+        .validate(eq(INVALID_TOKEN), any());
+  }
 
-    @Test
-    void validateShouldDelegateToParser() {
-        service.validate(TOKEN, FINGERPRINT);
+  @Test
+  void generateShouldDelegateToGenerator() {
+    assertEquals(TOKEN, service.generate(userDetails, FINGERPRINT));
 
-        verify(parser).validate(TOKEN, FINGERPRINT);
-    }
+    verify(generator).generate(userDetails, FINGERPRINT);
+  }
 
-    @Test
-    void extractIdShouldDelegateToParser() {
-        assertEquals(TOKEN_ID, service.extractId(TOKEN));
+  @Test
+  void extractUsernameShouldDelegateToParser() {
+    assertEquals(USERNAME, service.extractUsername(TOKEN));
 
-        verify(parser).extractId(TOKEN);
-    }
+    verify(parser).extractUsername(TOKEN);
+  }
 
-    @Test
-    void invalidateValidTokenShouldDeleteFromRepository() {
-        service.invalidate(TOKEN, FINGERPRINT);
-        verify(repository).deleteById(TOKEN_ID);
-    }
+  @Test
+  void validateShouldDelegateToParser() {
+    service.validate(TOKEN, FINGERPRINT);
 
-    @Test
-    void invalidateAlreadyInvalidatedShouldDoNothing() {
+    verify(parser).validate(TOKEN, FINGERPRINT);
+  }
 
-        service.invalidate(INVALID_TOKEN, FINGERPRINT);
-        verify(repository, never()).deleteById(any());
-        verify(parser, never()).extractId(any());
-    }
+  @Test
+  void extractIdShouldDelegateToParser() {
+    assertEquals(TOKEN_ID, service.extractId(TOKEN));
+
+    verify(parser).extractId(TOKEN);
+  }
+
+  @Test
+  void invalidateValidTokenShouldDeleteFromRepository() {
+    service.invalidate(TOKEN, FINGERPRINT);
+    verify(repository).deleteById(TOKEN_ID);
+  }
+
+  @Test
+  void invalidateAlreadyInvalidatedShouldDoNothing() {
+
+    service.invalidate(INVALID_TOKEN, FINGERPRINT);
+    verify(repository, never()).deleteById(any());
+    verify(parser, never()).extractId(any());
+  }
 }

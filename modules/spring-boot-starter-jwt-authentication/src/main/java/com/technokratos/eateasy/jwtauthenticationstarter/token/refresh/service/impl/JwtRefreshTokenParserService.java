@@ -1,5 +1,7 @@
 package com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.service.impl;
 
+import static com.technokratos.eateasy.jwtauthenticationstarter.qualifier.Token.TokenType.REFRESH;
+
 import com.technokratos.eateasy.jwtauthenticationstarter.qualifier.Token;
 import com.technokratos.eateasy.jwtauthenticationstarter.token.claimexctractor.ConfigurableClaimExtractor;
 import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.model.RefreshTokenEntity;
@@ -7,6 +9,8 @@ import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.repositor
 import com.technokratos.eateasy.jwtauthenticationstarter.token.refresh.service.RefreshTokenParserService;
 import com.technokratos.eateasy.jwtservice.JwtParserService;
 import jakarta.annotation.PostConstruct;
+import java.util.Objects;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,21 +22,17 @@ import org.springframework.security.authentication.InternalAuthenticationService
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Objects;
-import java.util.UUID;
-
-import static com.technokratos.eateasy.jwtauthenticationstarter.qualifier.Token.TokenType.REFRESH;
-
 /**
  * Refresh token validation and parsing service with fingerprint verification.
- * <p>
- * Performs comprehensive refresh token validation including:
+ *
+ * <p>Performs comprehensive refresh token validation including:
+ *
  * <ul>
- *   <li>Base JWT signature and expiration validation</li>
- *   <li>Token fingerprint matching with stored hash</li>
- *   <li>Token existence check in persistent storage</li>
+ *   <li>Base JWT signature and expiration validation
+ *   <li>Token fingerprint matching with stored hash
+ *   <li>Token existence check in persistent storage
  * </ul>
- * </p>
+ *
  * @see RefreshTokenParserService
  */
 @Slf4j
@@ -40,86 +40,93 @@ import static com.technokratos.eateasy.jwtauthenticationstarter.qualifier.Token.
 @RequiredArgsConstructor
 public class JwtRefreshTokenParserService implements RefreshTokenParserService {
 
-    @Token(REFRESH)
-    private final JwtParserService jwtParser;
-    private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenRepository repository;
-    private final ConfigurableClaimExtractor<? extends UUID> refreshTokenIdExtractor;
-    private final String refreshTokenIdClaim;
+  @Token(REFRESH)
+  private final JwtParserService jwtParser;
 
-    @PostConstruct
-    public void init() {
-        refreshTokenIdExtractor.claimName(refreshTokenIdClaim);
+  private final PasswordEncoder passwordEncoder;
+  private final RefreshTokenRepository repository;
+  private final ConfigurableClaimExtractor<? extends UUID> refreshTokenIdExtractor;
+  private final String refreshTokenIdClaim;
+
+  @PostConstruct
+  public void init() {
+    refreshTokenIdExtractor.claimName(refreshTokenIdClaim);
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public String extractUsername(String token) throws IllegalArgumentException {
+    return jwtParser.extractUsername(token);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Validates token integrity and fingerprint match
+   *
+   * @throws CredentialsExpiredException if token not found in storage
+   * @throws BadCredentialsException for fingerprint mismatch
+   * @throws AuthenticationException for JWT signature or expiration issues
+   */
+  @Override
+  public void validate(String token, String fingerprint) throws AuthenticationException {
+    log.trace("Validating refresh token: {}", token);
+    jwtParser.validate(token);
+
+    UUID tokenId = extractIdInternal(token);
+    RefreshTokenEntity refreshToken =
+        repository
+            .findById(tokenId)
+            .orElseThrow(() -> new CredentialsExpiredException("Refresh token not found"));
+
+    validateFingerprint(refreshToken.getFingerprint(), fingerprint);
+    log.trace("Refresh token validated successfully");
+  }
+
+  private void validateFingerprint(String expectedFingerprint, String actualFingerprint) {
+    if (expectedFingerprint == null && actualFingerprint == null) {
+      log.debug("Both expected and actual fingerprints are null");
+      return;
+    }
+    if (expectedFingerprint == null || actualFingerprint == null) {
+      log.debug(
+          "One of the fingerprints is null: expected {}, got {}",
+          expectedFingerprint,
+          actualFingerprint);
+      throw new BadCredentialsException("Invalid refresh token fingerprint");
+    }
+    if (!passwordEncoder.matches(actualFingerprint, expectedFingerprint)) {
+      log.debug("Refresh token fingerprint mismatch");
+      throw new BadCredentialsException("Invalid refresh token fingerprint");
+    }
+  }
+
+  @NonNull
+  private UUID extractIdInternal(String token) {
+    UUID extractedId = null;
+    try {
+      extractedId = extractId(token);
+    } catch (IllegalArgumentException e) {
+      throwFailedToParseRefreshTokenId(token, e);
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public String extractUsername(String token) throws IllegalArgumentException {
-        return jwtParser.extractUsername(token);
+    if (Objects.isNull(extractedId)) {
+      throwFailedToParseRefreshTokenId(token, null);
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Validates token integrity and fingerprint match
-     * </p>
-     * @throws CredentialsExpiredException if token not found in storage
-     * @throws BadCredentialsException for fingerprint mismatch
-     * @throws AuthenticationException for JWT signature or expiration issues
-     */
-    @Override
-    public void validate(String token, String fingerprint) throws AuthenticationException {
-        log.trace("Validating refresh token: {}", token);
-        jwtParser.validate(token);
+    log.trace("Extracted refresh token ID: {}", extractedId);
+    return extractedId;
+  }
 
-        UUID tokenId = extractIdInternal(token);
-        RefreshTokenEntity refreshToken = repository.findById(tokenId)
-                .orElseThrow(() -> new CredentialsExpiredException("Refresh token not found"));
+  private void throwFailedToParseRefreshTokenId(String token, @Nullable Throwable cause)
+      throws InternalAuthenticationServiceException {
+    log.error("Failed to parse refresh token ID from token: {}", token, cause);
+    throw new InternalAuthenticationServiceException("Failed to parse refresh token ID", cause);
+  }
 
-        validateFingerprint(refreshToken.getFingerprint(), fingerprint);
-        log.trace("Refresh token validated successfully");
-    }
-
-    private void validateFingerprint(String expectedFingerprint, String actualFingerprint) {
-        if (expectedFingerprint == null && actualFingerprint == null) {
-            log.debug("Both expected and actual fingerprints are null");
-            return;
-        }
-        if (expectedFingerprint == null || actualFingerprint == null) {
-            log.debug("One of the fingerprints is null: expected {}, got {}", expectedFingerprint, actualFingerprint);
-            throw new BadCredentialsException("Invalid refresh token fingerprint");
-        }
-        if (!passwordEncoder.matches(actualFingerprint, expectedFingerprint)) {
-            log.debug("Refresh token fingerprint mismatch");
-            throw new BadCredentialsException("Invalid refresh token fingerprint");
-        }
-    }
-
-    @NonNull
-    private UUID extractIdInternal(String token) {
-        UUID extractedId = null;
-        try {
-            extractedId = extractId(token);
-        } catch (IllegalArgumentException e) {
-            throwFailedToParseRefreshTokenId(token, e);
-        }
-
-        if (Objects.isNull(extractedId)) {
-            throwFailedToParseRefreshTokenId(token, null);
-        }
-
-        log.trace("Extracted refresh token ID: {}", extractedId);
-        return extractedId;
-    }
-
-    private void throwFailedToParseRefreshTokenId(String token, @Nullable Throwable cause) throws InternalAuthenticationServiceException {
-        log.error("Failed to parse refresh token ID from token: {}", token, cause);
-        throw new InternalAuthenticationServiceException("Failed to parse refresh token ID", cause);
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public UUID extractId(String token) throws IllegalArgumentException {
-        return refreshTokenIdExtractor.extract(jwtParser.extractAllClaims(token));
-    }
+  /** {@inheritDoc} */
+  @Override
+  public UUID extractId(String token) throws IllegalArgumentException {
+    return refreshTokenIdExtractor.extract(jwtParser.extractAllClaims(token));
+  }
 }

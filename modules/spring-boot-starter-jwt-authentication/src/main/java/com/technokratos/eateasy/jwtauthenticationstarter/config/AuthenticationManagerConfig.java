@@ -17,29 +17,29 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 @ConditionalOnExpression("'${jwt.mode:off}'.equals('off') == false")
 public class AuthenticationManagerConfig {
 
-    private final AccessTokenAuthenticationProvider accessTokenAuthenticationProvider;
-    private final HttpSecurity http;
+  private final AccessTokenAuthenticationProvider accessTokenAuthenticationProvider;
+  private final HttpSecurity http;
 
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
-    public AuthenticationManager serverAuthenticationManager(RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider) throws Exception {
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "server")
+  public AuthenticationManager serverAuthenticationManager(
+      RefreshTokenAuthenticationProvider refreshTokenAuthenticationProvider) throws Exception {
 
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.authenticationProvider(accessTokenAuthenticationProvider);
-        authenticationManagerBuilder.authenticationProvider(refreshTokenAuthenticationProvider);
-        return authenticationManagerBuilder.build();
-    }
+    AuthenticationManagerBuilder authenticationManagerBuilder =
+        http.getSharedObject(AuthenticationManagerBuilder.class);
+    authenticationManagerBuilder.authenticationProvider(accessTokenAuthenticationProvider);
+    authenticationManagerBuilder.authenticationProvider(refreshTokenAuthenticationProvider);
+    return authenticationManagerBuilder.build();
+  }
 
-
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "client")
-    public AuthenticationManager clientAuthenticationManager() throws Exception {
-        AuthenticationManagerBuilder authenticationManagerBuilder =
-                http.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.authenticationProvider(accessTokenAuthenticationProvider);
-        return authenticationManagerBuilder.build();
-    }
+  @Bean
+  @ConditionalOnMissingBean
+  @ConditionalOnProperty(prefix = "jwt", name = "mode", havingValue = "client")
+  public AuthenticationManager clientAuthenticationManager() throws Exception {
+    AuthenticationManagerBuilder authenticationManagerBuilder =
+        http.getSharedObject(AuthenticationManagerBuilder.class);
+    authenticationManagerBuilder.authenticationProvider(accessTokenAuthenticationProvider);
+    return authenticationManagerBuilder.build();
+  }
 }

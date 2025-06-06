@@ -15,31 +15,32 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class AuthenticationConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 
-    /*
-     Provides an in-memory user details service with a temporary admin user.
-     <p>
-     This stub implementation will be replaced when the User Microservice becomes available.
-     </p>
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return new InMemoryUserDetailsManager(User.withUsername("admin")
-                .password(passwordEncoder().encode("admin"))
-                .roles("USER")
-                .build());
-    }
+  /*
+  Provides an in-memory user details service with a temporary admin user.
+  <p>
+  This stub implementation will be replaced when the User Microservice becomes available.
+  </p>
+  */
+  @Bean
+  public UserDetailsService userDetailsService() {
+    return new InMemoryUserDetailsManager(
+        User.withUsername("admin")
+            .password(passwordEncoder().encode("admin"))
+            .roles("USER")
+            .build());
+  }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityConfigurer configurer) throws Exception {
-        http
-                .cors(AbstractHttpConfigurer::disable);
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityConfigurer configurer)
+      throws Exception {
+    http.cors(AbstractHttpConfigurer::disable);
 
-        configurer.configure(http);
-        return http.build();
-    }
+    configurer.configure(http);
+    return http.build();
+  }
 }

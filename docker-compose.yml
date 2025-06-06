@@ -1,0 +1,63 @@
+services:
+  consul:
+    image: hashicorp/consul
+    container_name: consul
+    command: agent -dev -client=0.0.0.0
+    ports:
+      - "8500:8500"
+    networks:
+      - spring-net
+
+  product-db:
+    image: postgres:17
+    container_name: product-db
+    environment:
+      POSTGRES_DB: product
+      POSTGRES_USER: eat_easy
+      POSTGRES_PASSWORD: easy
+    ports:
+      - "5433:5432"
+    networks:
+      - spring-net
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+
+  product-service:
+    build:
+      context: ./services/product-service/product-impl
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://product-db:5432/product
+      DB_USERNAME: eat_easy
+      DB_PASSWORD: easy
+    networks:
+      - spring-net
+    depends_on:
+      - product-db
+      - consul
+
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway-service
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - spring-net
+    depends_on:
+      - consul
+
+networks:
+  spring-net:
+    driver: bridge
+
+volumes:
+  product_db_data:

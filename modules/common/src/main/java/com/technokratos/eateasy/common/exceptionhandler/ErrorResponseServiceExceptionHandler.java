@@ -11,15 +11,16 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 /**
- * Global exception handler that converts {@link ServiceException} hierarchy
- * into standardized {@link ErrorResponse} payloads.
- * <p>
- * Automatically maps exception properties to response fields:
+ * Global exception handler that converts {@link ServiceException} hierarchy into standardized
+ * {@link ErrorResponse} payloads.
+ *
+ * <p>Automatically maps exception properties to response fields:
+ *
  * <ul>
- *   <li>HTTP status code from {@code ServiceException.getStatus()}</li>
- *   <li>Error message from exception's message</li>
- *   <li>Request path from servlet request</li>
- *   <li>Additional details from exception's details field</li>
+ *   <li>HTTP status code from {@code ServiceException.getStatus()}
+ *   <li>Error message from exception's message
+ *   <li>Request path from servlet request
+ *   <li>Additional details from exception's details field
  * </ul>
  *
  * @see ControllerAdvice
@@ -29,29 +30,27 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class ErrorResponseServiceExceptionHandler {
 
+  @ExceptionHandler(ClientErrorServiceException.class)
+  public ResponseEntity<ErrorResponse> handleClientErrorServiceException(
+      ClientErrorServiceException e, HttpServletRequest request) {
+    log.info("Client error occurred: path={}, error={}", request.getRequestURI(), e.getMessage());
+    return ResponseEntity.status(e.getStatus()).body(createErrorResponse(e, request));
+  }
 
-    @ExceptionHandler(ClientErrorServiceException.class)
-    public ResponseEntity<ErrorResponse> handleClientErrorServiceException(ClientErrorServiceException e, HttpServletRequest request) {
-        log.info("Client error occurred: path={}, error={}", request.getRequestURI(), e.getMessage());
-        return ResponseEntity
-                .status(e.getStatus())
-                .body(createErrorResponse(e, request));
-    }
+  @ExceptionHandler(ServerErrorServiceException.class)
+  public ResponseEntity<ErrorResponse> handleServerErrorServiceException(
+      ServerErrorServiceException e, HttpServletRequest request) {
+    log.error(
+        "Server error occurred: path={}, error={}", request.getRequestURI(), e.getMessage(), e);
+    return ResponseEntity.status(e.getStatus()).body(createErrorResponse(e, request));
+  }
 
-    @ExceptionHandler(ServerErrorServiceException.class)
-    public ResponseEntity<ErrorResponse> handleServerErrorServiceException(ServerErrorServiceException e, HttpServletRequest request) {
-        log.error("Server error occurred: path={}, error={}", request.getRequestURI(), e.getMessage(), e);
-        return ResponseEntity
-                .status(e.getStatus())
-                .body(createErrorResponse(e, request));
-    }
-
-    private ErrorResponse createErrorResponse(ServiceException e, HttpServletRequest request) {
-        return ErrorResponse.builder()
-                .httpStatus(e.getStatus())
-                .path(request.getRequestURI())
-                .error(e.getMessage())
-                .details(e.getDetails())
-                .build();
-    }
+  private ErrorResponse createErrorResponse(ServiceException e, HttpServletRequest request) {
+    return ErrorResponse.builder()
+        .httpStatus(e.getStatus())
+        .path(request.getRequestURI())
+        .error(e.getMessage())
+        .details(e.getDetails())
+        .build();
+  }
 }

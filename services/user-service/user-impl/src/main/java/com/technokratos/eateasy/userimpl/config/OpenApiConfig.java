@@ -11,22 +11,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                    .title("User Microservice API")
-                    .version("1.0")
-                    .description("API для управления пользователями")
-                    .contact(new Contact()
-                        .name("Technocratos Team")
-                        .email("support@technocratos.com"))
-                    .license(new License()
-                        .name("Apache 2.0")
-                        .url("https://springdoc.org")))
-                .externalDocs(new ExternalDocumentation()
-                    .description("User Microservice Wiki")
-                    .url("https://example.com/docs"));
-    }
-
+  @Bean
+  public OpenAPI customOpenAPI() {
+    return new OpenAPI()
+        .info(
+            new Info()
+                .title("User Microservice API")
+                .version("1.0")
+                .description("API для управления пользователями")
+                .contact(new Contact().name("Technocratos Team").email("support@technocratos.com"))
+                .license(new License().name("Apache 2.0").url("https://springdoc.org")))
+        .externalDocs(
+            new ExternalDocumentation()
+                .description("User Microservice Wiki")
+                .url("https://example.com/docs"));
+  }
 }

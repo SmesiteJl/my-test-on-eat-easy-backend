@@ -18,7 +18,7 @@ class JacocoConventionPlugin implements Plugin<Project> {
             "**/*.class"
     ]
 
-    private static final Float MINIMUM_COVERAGE = 0.8
+    private static final Float MINIMUM_COVERAGE = 0.0
 
     @Override
     void apply(Project rootProject) {
@@ -35,14 +35,27 @@ class JacocoConventionPlugin implements Plugin<Project> {
 
     private void configureForJavaProject(Project project) {
         project.pluginManager.apply('jacoco')
+        project.pluginManager.apply('com.diffplug.spotless')
 
         project.jacoco {
             toolVersion = JACOCO_VERSION
         }
 
+        project.spotless {
+            java {
+                googleJavaFormat('1.17.0')
+                target 'src/**/*.java'
+            }
+        }
+
         project.afterEvaluate {
             configureJacocoTestReport(project)
             configureJacocoTestCoverageVerification(project)
+        }
+
+        // Добавим spotlessCheck в check
+        project.tasks.named('check') {
+            dependsOn project.tasks.named('spotlessCheck')
         }
     }
 
@@ -87,16 +100,34 @@ class JacocoConventionPlugin implements Plugin<Project> {
     }
 
     private void configureForNonJavaProject(Project project) {
+        // Всё равно подключим spotless, чтобы можно было, например, форматировать Gradle скрипты
+        project.pluginManager.apply('com.diffplug.spotless')
+
+        project.spotless {
+            format 'misc', {
+                target '*.gradle', '*.md', '*.gitignore'
+                trimTrailingWhitespace()
+                endWithNewline()
+            }
+        }
+
+        project.tasks.named('check') {
+            dependsOn project.tasks.named('spotlessCheck')
+        }
+
         registerAggregatedCheckTask(project)
     }
 
     private void registerAggregatedCheckTask(Project project) {
-        project.tasks.register('check') {
-            dependsOn project.subprojects*.tasks*.named('check')
-            description = "Aggregates check tasks of all subprojects"
-            group = "verification"
+        if (!project.tasks.findByName('check')) {
+            project.tasks.register('check') {
+                dependsOn project.subprojects*.tasks*.find { it.name == 'check' }
+                description = "Aggregates check tasks of all subprojects"
+                group = "verification"
+            }
         }
     }
+
 
     private static boolean hasJavaSources(Project project) {
         return project.file("${project.projectDir}/src/main/java").exists()

@@ -8,6 +8,7 @@ import com.technokratos.eateasy.jwtauthenticationstarter.utils.requestmapper.Req
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Objects;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,107 +17,112 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.util.StringUtils;
 
-import java.util.Objects;
-
 /**
  * Logout handler that invalidates refresh tokens during logout.
- * <p>
- * Supports two token retrieval strategies:
+ *
+ * <p>Supports two token retrieval strategies:
+ *
  * <ul>
- *   <li>Cookie-based token extraction (when configured)</li>
- *   <li>Request body token extraction via {@link RefreshRequest}</li>
+ *   <li>Cookie-based token extraction (when configured)
+ *   <li>Request body token extraction via {@link RefreshRequest}
  * </ul>
+ *
  * Invalidates tokens and removes cookies according to configuration.
  */
 @Slf4j
 @Builder
 @RequiredArgsConstructor
 public class RefreshTokenInvalidationLogoutHandler implements LogoutHandler {
-    private final boolean useCookie;
-    private final RequestMapper requestMapper;
-    private final RefreshTokenCookieReader refreshTokenCookieReader;
-    private final RefreshTokenCookieWriter refreshTokenCookieWriter;
-    private final RefreshTokenService refreshTokenService;
+  private final boolean useCookie;
+  private final RequestMapper requestMapper;
+  private final RefreshTokenCookieReader refreshTokenCookieReader;
+  private final RefreshTokenCookieWriter refreshTokenCookieWriter;
+  private final RefreshTokenService refreshTokenService;
 
-    /**
-     * Performs logout cleanup:
-     * <ol>
-     *   <li>Extracts refresh token from cookie/body</li>
-     *   <li>Invalidates token with stored fingerprint</li>
-     *   <li>Removes cookie if configured</li>
-     * </ol>
-     */
-    @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        String refreshToken = obtainRefreshToken(request);
+  /**
+   * Performs logout cleanup:
+   *
+   * <ol>
+   *   <li>Extracts refresh token from cookie/body
+   *   <li>Invalidates token with stored fingerprint
+   *   <li>Removes cookie if configured
+   * </ol>
+   */
+  @Override
+  public void logout(
+      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+    String refreshToken = obtainRefreshToken(request);
 
-        if (!StringUtils.hasText(refreshToken)) {
-            log.debug("Refresh token not found in request");
-            return;
-        } else {
-            invalidateToken(refreshToken, obtainFingerprint(request));
-            removeCookieIfRequired(response);
-        }
-
-        log.info("User logged out, refresh token invalidated");
+    if (!StringUtils.hasText(refreshToken)) {
+      log.debug("Refresh token not found in request");
+      return;
+    } else {
+      invalidateToken(refreshToken, obtainFingerprint(request));
+      removeCookieIfRequired(response);
     }
 
-    protected String obtainRefreshToken(HttpServletRequest request) {
-        String refreshToken = null;
-        if (useCookie) {
-            refreshToken = obtainRefreshTokenFromCookie(request);
-        }
+    log.info("User logged out, refresh token invalidated");
+  }
 
-        if (Objects.isNull(refreshToken)) {
-            refreshToken = obtainRefreshTokenFromBody(request);
-        }
-
-        return Objects.requireNonNullElse(refreshToken, "");
+  protected String obtainRefreshToken(HttpServletRequest request) {
+    String refreshToken = null;
+    if (useCookie) {
+      refreshToken = obtainRefreshTokenFromCookie(request);
     }
 
-    @Nullable
-    private String obtainRefreshTokenFromCookie(HttpServletRequest request) {
-        Cookie refreshTokenCookie = refreshTokenCookieReader.read(request);
-        if (Objects.isNull(refreshTokenCookie)) {
-            log.trace("Refresh token cookie not found in request.");
-            return null;
-        }
-        log.trace("Refresh token cookie found: {}", refreshTokenCookie.getValue());
-        return refreshTokenCookie.getValue();
+    if (Objects.isNull(refreshToken)) {
+      refreshToken = obtainRefreshTokenFromBody(request);
     }
 
-    private String obtainRefreshTokenFromBody(HttpServletRequest request) {
-        RefreshRequest refreshRequest = requestMapper.getObjectFromRequest(request, RefreshRequest.class);
-        if (Objects.isNull(refreshRequest)) {
-            log.trace("Refresh token not found in request body.");
-            return null;
-        }
+    return Objects.requireNonNullElse(refreshToken, "");
+  }
 
-        log.trace("Refresh token obtained from request body: {}", refreshRequest.refreshToken());
-        return refreshRequest.refreshToken();
+  @Nullable
+  private String obtainRefreshTokenFromCookie(HttpServletRequest request) {
+    Cookie refreshTokenCookie = refreshTokenCookieReader.read(request);
+    if (Objects.isNull(refreshTokenCookie)) {
+      log.trace("Refresh token cookie not found in request.");
+      return null;
+    }
+    log.trace("Refresh token cookie found: {}", refreshTokenCookie.getValue());
+    return refreshTokenCookie.getValue();
+  }
+
+  private String obtainRefreshTokenFromBody(HttpServletRequest request) {
+    RefreshRequest refreshRequest =
+        requestMapper.getObjectFromRequest(request, RefreshRequest.class);
+    if (Objects.isNull(refreshRequest)) {
+      log.trace("Refresh token not found in request body.");
+      return null;
     }
 
-    private void invalidateToken(String token, String fingerprint) {
-        refreshTokenService.invalidate(token, fingerprint);
-        log.debug("Refresh token invalidated");
-    }
-    protected String obtainFingerprint(HttpServletRequest request) {
-        RefreshRequest refreshRequest = requestMapper.getObjectFromRequest(request, RefreshRequest.class);
-        if (Objects.isNull(refreshRequest)) {
-            log.trace("Fingerprint not found in request body.");
-            return "";
-        }
+    log.trace("Refresh token obtained from request body: {}", refreshRequest.refreshToken());
+    return refreshRequest.refreshToken();
+  }
 
-        log.trace("Fingerprint obtained from request body: {}", refreshRequest.fingerprint());
-        return Objects.requireNonNullElse(refreshRequest.fingerprint(), "");
+  private void invalidateToken(String token, String fingerprint) {
+    refreshTokenService.invalidate(token, fingerprint);
+    log.debug("Refresh token invalidated");
+  }
+
+  protected String obtainFingerprint(HttpServletRequest request) {
+    RefreshRequest refreshRequest =
+        requestMapper.getObjectFromRequest(request, RefreshRequest.class);
+    if (Objects.isNull(refreshRequest)) {
+      log.trace("Fingerprint not found in request body.");
+      return "";
     }
 
-    protected void removeCookieIfRequired(HttpServletResponse response) {
-        if (!useCookie) {
-            log.trace("Cookie usage is disabled, skipping cookie removal");
-            return;
-        }
-        refreshTokenCookieWriter.remove(response);
-        log.debug("Refresh token cookie removed");
+    log.trace("Fingerprint obtained from request body: {}", refreshRequest.fingerprint());
+    return Objects.requireNonNullElse(refreshRequest.fingerprint(), "");
+  }
+
+  protected void removeCookieIfRequired(HttpServletResponse response) {
+    if (!useCookie) {
+      log.trace("Cookie usage is disabled, skipping cookie removal");
+      return;
     }
+    refreshTokenCookieWriter.remove(response);
+    log.debug("Refresh token cookie removed");
+  }
 }
