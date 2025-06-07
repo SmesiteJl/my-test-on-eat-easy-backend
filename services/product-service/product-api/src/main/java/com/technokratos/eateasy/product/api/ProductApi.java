@@ -66,7 +66,7 @@ public interface ProductApi {
                                   "description": "Fresh organic bananas from Ecuador.",
                                   "photoUrl": "http://example.com/images/banana.jpg",
                                   "price": 1.99,
-                                  "category": "Fruits",
+                                  "categories": ["02255458-2999-4799-9d9a-584e8c93ab17"],
                                   "quantity": 150
                                 }
                             """)))
