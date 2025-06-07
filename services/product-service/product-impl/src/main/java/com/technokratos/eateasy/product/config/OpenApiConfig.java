@@ -1,4 +1,4 @@
-package com.technokratos.eateasy.userimpl.config;
+package com.technokratos.eateasy.product.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -17,12 +17,12 @@ public class OpenApiConfig {
   @Bean
   public OpenAPI customOpenAPI() {
     return new OpenAPI()
-        .servers(List.of(new Server().url("http://localhost:8080/user-service")))
+        .servers(List.of(new Server().url("http://localhost:8080/product-service")))
         .info(
             new Info()
                 .title("User Microservice API")
                 .version("1.0")
-                .description("API для управления пользователями")
+                .description("API для управления продуктами")
                 .contact(new Contact().name("Technocratos Team").email("support@technocratos.com"))
                 .license(new License().name("Apache 2.0").url("https://springdoc.org")))
         .externalDocs(

@@ -8,11 +8,20 @@ services:
     networks:
       - spring-net
 
+  redis:
+    image: redis:7.2
+    container_name: redis
+    command: [ "redis-server", "--requirepass", "eat-easy" ]
+    ports:
+      - "6379:6379"
+    networks:
+      - spring-net
+
   product-db:
     image: postgres:17
     container_name: product-db
     environment:
-      POSTGRES_DB: product
+      POSTGRES_DB: product_db
       POSTGRES_USER: eat_easy
       POSTGRES_PASSWORD: easy
     ports:
@@ -22,16 +31,63 @@ services:
     volumes:
       - product_db_data:/var/lib/postgresql/data
 
+  user-db:
+    image: postgres:17
+    container_name: user-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: eat_easy
+      POSTGRES_PASSWORD: easy
+    ports:
+      - "5434:5432"
+    networks:
+      - spring-net
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+
+  user-db-migrator:
+    image: liquibase/liquibase:4.28
+    container_name: user-db-migrator
+    depends_on:
+      - user-db
+    networks:
+      - spring-net
+    volumes:
+      - ./services/user-service/user-db/db/changelog:/liquibase/changelog
+    command: >
+      liquibase
+      --url=jdbc:postgresql://user-db:5432/user_db
+      --changeLogFile=changelog/db.changelog-master.yaml
+      --username=eat_easy
+      --password=easy
+      --logLevel=info
+      update
+
+  product-db-migrator:
+    image: liquibase/liquibase:4.28
+    container_name: product-db-migrator
+    depends_on:
+      - product-db
+    networks:
+      - spring-net
+    volumes:
+      - ./services/product-service/product-db/db/changelog:/liquibase/changelog
+    command: >
+      liquibase
+      --url=jdbc:postgresql://product-db:5432/product_db
+      --changeLogFile=changelog/db.changelog-master.yaml
+      --username=eat_easy
+      --password=easy
+      --logLevel=info
+      update
+
   product-service:
     build:
       context: ./services/product-service/product-impl
       dockerfile: Dockerfile
-    container_name: product-service
-    ports:
-      - "8081:8081"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_URL: jdbc:postgresql://product-db:5432/product
+      DB_URL: jdbc:postgresql://product-db:5432/product_db
       DB_USERNAME: eat_easy
       DB_PASSWORD: easy
     networks:
@@ -40,6 +96,39 @@ services:
       - product-db
       - consul
 
+  user-service:
+    build:
+      context: ./services/user-service/user-impl
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://user-db:5432/user_db
+      DB_USERNAME: eat_easy
+      DB_PASSWORD: easy
+    networks:
+      - spring-net
+    depends_on:
+      - user-db
+      - consul
+
+  authentication-service:
+    build:
+      context: ./services/authentication-service
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eat-easy
+      JWT_ACCESS_PRIVATE_KEY: file:/app/security/access_private.pem
+      JWT_ACCESS_PUBLIC_KEY: file:/app/security/access_public.pem
+      JWT_REFRESH_PRIVATE_KEY: file:/app/security/refresh_private.pem
+      JWT_REFRESH_PUBLIC_KEY: file:/app/security/refresh_public.pem
+    networks:
+      - spring-net
+    depends_on:
+      - redis
+      - consul
 
   api-gateway:
     build:
@@ -61,3 +150,4 @@ networks:
 
 volumes:
   product_db_data:
+  user_db_data:

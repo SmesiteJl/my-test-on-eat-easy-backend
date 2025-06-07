@@ -1,9 +1,28 @@
+server:
+  port: 8091
+
 spring:
+  application:
+    name: user-service
+
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        register: true
+        prefer-ip-address: true
+        health-check-path: /actuator/health
+        health-check-interval: 10s
+        scheme: http
+        deregister: true
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
       ddl-auto: validate
@@ -13,9 +32,11 @@ spring:
         format_sql: true
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    url: /v3/api-docs
     tags-sorter: alpha
     operations-sorter: alpha
   api-docs:

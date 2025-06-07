@@ -1,0 +1,8 @@
+{
+  "urls": [
+    { "url": "/user-service/v3/api-docs", "name": "User Service" },
+    { "url": "/product-service/v3/api-docs", "name": "Product Service" },
+    { "url": "/authentication-service/v3/api-docs", "name": "Authentication Service" }
+  ],
+  "urls.primaryName": "User Service"
+}

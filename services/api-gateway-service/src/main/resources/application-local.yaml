@@ -1,6 +1,18 @@
 server:
   port: 8080
 
+springdoc:
+  swagger-ui:
+    config-url: /api-docs-config.json
+    path: /swagger-ui.html
+    url: /v3/api-docs
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
 spring:
   application:
     name: gateway-service

@@ -37,10 +37,18 @@ public class AuthenticationConfig {
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityConfigurer configurer)
-      throws Exception {
+          throws Exception {
     http.cors(AbstractHttpConfigurer::disable);
 
     configurer.configure(http);
+
+    http
+            .authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                    .anyRequest().authenticated()
+            );
+
     return http.build();
   }
+
 }

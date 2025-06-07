@@ -4,7 +4,6 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 
 @Configuration
 public class GatewayConfig {
@@ -33,15 +32,14 @@ public class GatewayConfig {
                             f.rewritePath(
                                 "/api/v1/products/(?<segment>.*)", "/api/v1/products/${segment}"))
                     .uri("lb://product-service"))
-
         // block all other requests
-        .route(
-            "block-others",
-            r ->
-                r.predicate(exchange -> true) // ловим всё остальное
-                    .filters(f -> f.setStatus(HttpStatus.FORBIDDEN))
-                    .uri("no://op") // фиктивный URI, не вызывается
-            )
+        /*.route(
+        "block-others",
+        r ->
+            r.predicate(exchange -> true) // ловим всё остальное
+                .filters(f -> f.setStatus(HttpStatus.FORBIDDEN))
+                .uri("no://op") // фиктивный URI, не вызывается
+        )*/
         .build();
   }
 }
