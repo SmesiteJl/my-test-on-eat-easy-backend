@@ -138,7 +138,7 @@ public interface ProductApi {
   @Operation(summary = "Delete a product by its ID")
   @ApiResponses(
       value = {
-        @ApiResponse(responseCode = "200", description = "Product deleted successfully"),
+        @ApiResponse(responseCode = "204", description = "Product deleted successfully"),
         @ApiResponse(responseCode = "404", description = "Product not found")
       })
   @DeleteMapping("/{id}")
