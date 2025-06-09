@@ -2,11 +2,6 @@
 set -e
 set -o pipefail
 
-echo "🧼 Cleaning up Docker containers, volumes, and networks..."
-docker container ls -aq | xargs -r docker rm -f
-docker volume ls -q | xargs -r docker volume rm
-docker network ls --filter "type=custom" -q | xargs -r docker network rm || true
-
 echo "🧪 Starting temporary Redis for tests..."
 docker run --rm -d --name test-redis -p 6379:6379 redis:7-alpine
 sleep 3
