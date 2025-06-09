@@ -21,4 +21,5 @@ docker stop test-redis > /dev/null || true
 echo "✅ Tests and fat JAR build completed successfully."
 
 echo "🐳 Starting Docker Compose (including Redis)..."
-docker-compose up --build
+docker-compose up --build --scale user-service=2 --scale product-service=2 -d
+
